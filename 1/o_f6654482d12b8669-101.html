@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+<title>Page 101</title>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<style type="text/css">
+<!--
+	p {margin: 0; padding: 0;}	.ft00{font-size:63px;font-family:Times;color:#4f81bc;}
+	.ft01{font-size:31px;font-family:Times;color:#ff9933;}
+	.ft02{font-size:40px;font-family:Times;color:#00007c;}
+	.ft03{font-size:30px;font-family:Times;color:#ff9933;}
+	.ft04{font-size:34px;font-family:Times;color:#00007c;}
+	.ft05{font-size:22px;font-family:Times;color:#ff9933;}
+	.ft06{font-size:27px;font-family:Times;color:#00007c;}
+	.ft07{font-size:27px;font-family:Times;color:#00007c;}
+-->
+</style>
+</head>
+<body bgcolor="#A0A0A0" vlink="blue" link="blue">
+<div id="page101-div" style="position:relative;width:1080px;height:810px;">
+<img width="1080" height="810" src="o_f6654482d12b8669101.png" alt="background image"/>
+<p style="position:absolute;top:26px;left:32px;white-space:nowrap" class="ft00">控制其它的Entity&#160;</p>
+<p style="position:absolute;top:143px;left:17px;white-space:nowrap" class="ft01"></p>
+<p style="position:absolute;top:137px;left:38px;white-space:nowrap" class="ft02">包括2个部分:&#160;</p>
+<p style="position:absolute;top:188px;left:39px;white-space:nowrap" class="ft03"></p>
+<p style="position:absolute;top:187px;left:56px;white-space:nowrap" class="ft04">客户端发送位置更新到新的Entity:&#160;</p>
+<p style="position:absolute;top:222px;left:56px;white-space:nowrap" class="ft04">KBEngine.controlEntity()&#160;&#160;</p>
+<p style="position:absolute;top:266px;left:39px;white-space:nowrap" class="ft03"></p>
+<p style="position:absolute;top:264px;left:56px;white-space:nowrap" class="ft04">服务器接受Entity的位置更新:&#160;Entity.controlledBy&#160;</p>
+<p style="position:absolute;top:311px;left:65px;white-space:nowrap" class="ft05"></p>
+<p style="position:absolute;top:307px;left:86px;white-space:nowrap" class="ft06">设置成控制该Entity的玩家的Mailbox&#160;</p>
+<p style="position:absolute;top:350px;left:17px;white-space:nowrap" class="ft01"></p>
+<p style="position:absolute;top:344px;left:38px;white-space:nowrap" class="ft02">这个Entity不能超过控制玩家的AOI范围之外&#160;(Proxy&#160;Entity)&#160;</p>
+<p style="position:absolute;top:396px;left:39px;white-space:nowrap" class="ft03"></p>
+<p style="position:absolute;top:394px;left:56px;white-space:nowrap" class="ft04">因此,&#160;基本上仅适合于玩家坐骑的vehicle&#160;</p>
+<p style="position:absolute;top:444px;left:17px;white-space:nowrap" class="ft01"></p>
+<p style="position:absolute;top:438px;left:38px;white-space:nowrap" class="ft02">或者,&#160;可以从一个玩家转移控制到另一个玩家&#160;(两者都应</p>
+<p style="position:absolute;top:478px;left:38px;white-space:nowrap" class="ft02">该有Proxy&#160;base部分)&#160;</p>
+<p style="position:absolute;top:529px;left:39px;white-space:nowrap" class="ft03"></p>
+<p style="position:absolute;top:528px;left:56px;white-space:nowrap" class="ft04">Proxy.giveClientTo()&#160;</p>
+<p style="position:absolute;top:575px;left:65px;white-space:nowrap" class="ft05"></p>
+<p style="position:absolute;top:572px;left:86px;white-space:nowrap" class="ft06">Entity.controlledBy<b>&#160;</b>&#160;会自动地设置给新的玩家<b>&#160;</b></p>
+<p style="position:absolute;top:609px;left:39px;white-space:nowrap" class="ft03"></p>
+<p style="position:absolute;top:607px;left:56px;white-space:nowrap" class="ft04">分裂型的&#160;–&#160;AOI被销毁,&#160;重建，Space被重新加载&#160;</p>
+</div>
+</body>
+</html>
