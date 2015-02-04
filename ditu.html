@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+        body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+    </style>
+    <!--<link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.css">-->
+    <!--<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>-->
+    <!--<script src="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.js"></script>-->
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=E29LrVgetWbBbfcohGYmdMDc"></script>
+    <title>个性化地图</title>
+</head>
+<body>
+<div id="allmap">
+    <canvas id="myCanvas" width="1024" height="1024">
+        Your browser does not support the canvas element.
+    </canvas>
+</div>
+</body>
+</html>
+
+
+<script type="text/javascript">
+
+   //var MTKPointMax = {x:20037508.3427892,y:20037508.3427892};
+
+   function Position2D(xPos,yPos)
+   {
+       this.x = xPos;
+       this.y = yPos;
+
+   }
+
+   var MTKPointMax = new Position2D(20037508.3427892,20037508.3427892);
+   var MTKPointCur={x:0,y:0};
+   var PixelPoint = {x:0,y:0};
+   var curLevel = 15;
+
+   var map;
+   var cxt;
+   Init();
+   getLocation();
+
+
+   function Init()
+   {
+        map =document.getElementById("allmap");
+        var c=document.getElementById("myCanvas");
+        cxt=c.getContext("2d");
+   }
+
+   function getLocation()
+   {
+//       console.log("getLocation");
+//       if (navigator.geolocation)
+//       {
+//          navigator.geolocation.getCurrentPosition(lonlat2mercator);
+//           console.log("navigator.geolocation");
+//       }
+//       else
+//       {
+//           alert("Geolocation is not supported by this browser.");
+//           console.log("Geolocation is not supported");
+//       }
+
+console.log("getLocation11111111111111111111");
+       var geolocation = new BMap.Geolocation();
+       geolocation.getCurrentPosition(lonlat2mercator,{enableHighAccuracy: true})
+   }
+
+   //经纬度转墨卡托搜索
+   function lonlat2mercator(position){
+
+       console.log("lonlat2mercator222222222222222222222222");
+
+       var  mercator={x:0,y:0};
+       var x = position.point.lng *20037508.34/180;
+       var y = Math.log(Math.tan((90+position.point.lat)*Math.PI/360))/(Math.PI/180);
+//       var x = position.coords.longitude *20037508.34/180;
+//       var y = Math.log(Math.tan((90+position.coords.latitude)*Math.PI/360))/(Math.PI/180);
+       y = y *20037508.34/180;
+       mercator.x = x;
+       mercator.y = y;
+       MTKPointCur.x = x;
+       MTKPointCur.y = y;
+       CreateImage();
+       return mercator ;
+   }
+
+//
+//   //墨卡托转经纬度
+//   function mercator2lonlat(mercator){
+//       var lonlat={x:0,y:0};
+//       var x = mercator.x/20037508.34*180;
+//       var y = mercator.y/20037508.34*180;
+//       y= 180/Math.PI*(2*Math.atan(Math.exp(y*Math.PI/180))-Math.PI/2);
+//       lonlat.x = x;
+//       lonlat.y = y;
+//       return lonlat;
+//   }
+
+   //得到像素比例，1像素代表多少米
+    function GetPixelSizeByLevel(level)
+    {
+        //比例尺从3到18，3最大，18最小
+        return Math.pow(2,18 - level);
+    }
+
+    //得到屏幕坐标
+    function GetPixelPoint(point)
+    {
+        var pixelPoint =  {x:0,y:0};
+        pixelPoint.x = point.x / GetPixelSizeByLevel(curLevel);
+        pixelPoint.y = point.y/GetPixelSizeByLevel(curLevel);
+       //alert("x =" + pixelPoint.x + "\n" + "y=" + pixelPoint.y);
+        return pixelPoint;
+    }
+
+    //根据屏幕坐标得到图片坐标
+    function GetImagePoint(point)
+    {
+        var ImagePoint = {x:0,y:0};
+        ImagePoint.x = Math.round(point.x /256);
+        ImagePoint.y = Math.round(point.y/256);
+       // alert("x =" + ImagePoint.x + "\n" + "y=" + ImagePoint.y);
+        return ImagePoint;
+    }
+
+
+    function CreateImage()
+    {
+        var centerPos = GetImagePoint(GetPixelPoint(MTKPointCur));
+        //加载图片
+        for (var i= 0;i<2;i++)
+        {
+            for (var j=0;j<2;j++)
+            {
+                var xPos = centerPos.x - 1 + i;
+                var yPos = centerPos.y + 1 - j;
+                //var urlNew = "http://api.map.baidu.com/customimage/tile?&x=" +xPos + "&y=" + yPos + "&z=" + curLevel + "&udt=20150116&customid=dark";
+
+                preImage(xPos,yPos,function(){
+                    cxt.drawImage(this,256*i,256*j);
+                  // cxt.drawImage(this,0,0);
+                });
+            }
+        }
+
+//        preImage(centerPos.x,centerPos.y,function(){
+//            cxt.drawImage(this,0,0);
+//        });
+
+//        var c=document.getElementById("myCanvas");
+//        cxt=c.getContext("2d");
+//        map.appendChild(c);
+    }
+
+    function preImage(xPos,yPos,callback)
+    {
+        var urlNew = "http://api.map.baidu.com/customimage/tile?&x=" +xPos + "&y=" + yPos + "&z=" + curLevel + "&udt=20150116&customid=dark";
+        var img = new Image(); //创建一个Image对象，实现图片的预下载
+        img.src = urlNew;
+
+        if (img.complete) { // 如果图片已经存在于浏览器缓存，直接调用回调函数
+            callback.call(img);
+          // saveImage(xPos,yPos,img);
+            return; // 直接返回，不用再处理onload事件
+        }
+
+        img.onload = function () { //图片下载完毕时异步调用callback函数。
+            callback.call(img);//将回调函数的this替换为Image对象
+        };
+    }
+
+//   function saveImage(x,y,img)
+//   {
+//       var oCanvas = document.getElementById("myCanvas");
+//
+//       img.src = oCanvas.toDataURL("image/png");
+//
+//
+//      // Canvas2Image.saveAsPNG(oCanvas);  // 这将会提示用户保存PNG图片
+//   }
+//    $("myCanvas").on("swipe",function(){
+//        alert("swipe");
+//    });
+
+</script>
+
+
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+    <!--<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />-->
+    <!--<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />-->
+    <!--<title>TestMap</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<p id="demo">点击这个按钮，获得您的坐标：</p>-->
+<!--<button onclick="getLocation()">试一下</button>-->
+
+<!--<canvas id="myCanvas" width="200" height="100" style="border:1px solid #c3c3c3;">-->
+    <!--Your browser does not support the canvas element.-->
+<!--</canvas>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!--<script>-->
+
+    <!--var c=document.getElementById("myCanvas");-->
+    <!--var cxt=c.getContext("2d");-->
+    <!--cxt.fillStyle="#FF0000";-->
+    <!--cxt.beginPath();-->
+    <!--cxt.arc(70,18,15,0,Math.PI*2,true);-->
+    <!--cxt.closePath();-->
+    <!--cxt.fill();-->
+
+
+    <!--var x=document.getElementById("demo");-->
+    <!--function getLocation()-->
+    <!--{-->
+        <!--if (navigator.geolocation)-->
+        <!--{-->
+            <!--navigator.geolocation.getCurrentPosition(showPosition);-->
+        <!--}-->
+        <!--else{x.innerHTML="Geolocation is not supported by this browser.";}-->
+    <!--}-->
+    <!--function showPosition(position)-->
+    <!--{-->
+        <!--x.innerHTML="Latitude: " + position.coords.latitude +-->
+                <!--"<br />Longitude: " + position.coords.longitude;-->
+    <!--}-->
+<!--</script>-->
+
+<!--<img style="margin:20px" width="280" height="140" src="http://api.map.baidu.com/staticimage?-->
+<!--width=280&height=140&zoom=11&scale=2" />-->
+
+
+<!--//判断网络状态//-->
+ <!--// if(navigator.onLine)-->
+
+<!--// Converts image to canvas; returns new canvas element-->
+<!--function convertImageToCanvas(image) {-->
+<!--var canvas = document.createElement("canvas");-->
+<!--canvas.width = image.width;-->
+<!--canvas.height = image.height;-->
+<!--canvas.getContext("2d").drawImage(image, 0, 0);</p> <p> return canvas;-->
+    <!--}-->
+
+<!--// Converts canvas to an image-->
+<!--function convertCanvasToImage(canvas) {-->
+<!--var image = new Image();-->
+<!--image.src = canvas.toDataURL("image/png");-->
+<!--return image;-->
+<!--}-->
