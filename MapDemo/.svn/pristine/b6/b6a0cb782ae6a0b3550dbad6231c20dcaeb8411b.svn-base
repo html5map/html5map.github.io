@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+        body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+    </style>
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.css">
+    <script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=E29LrVgetWbBbfcohGYmdMDc"></script>
+    <script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.touchSwipe.min.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.touchSwipe.js"></script>
+    <title>个性化地图</title>
+</head>
+<body>
+<div id="allmap">
+    <canvas id="myCanvas">
+        Your browser does not support the canvas element.
+    </canvas>
+
+</div>
+
+</body>
+</html>
+
+
+
+<script type="text/javascript">
+
+   //var MTKPointMax = {x:20037508.3427892,y:20037508.3427892};
+
+
+   var MTKPointMax = new Position2D(20037508.3427892,20037508.3427892);
+   var MTKPointCur={x:0,y:0};
+   var PixelPoint = {x:0,y:0};
+   var curLevel = 13;
+   var centerPos;
+   //像素偏移点
+   var finalOffsetPixPos = {x:0,y:0};
+   var offsetPixPos = {x:0,y:0};
+
+   var screenWidth =  document.body.clientWidth;
+   var screenHeight =  document.body.clientHeight;
+
+   var map;
+   var cxt;
+   var plantBtnImg;
+
+   $(document).ready(function(){
+       Init();
+       getLocation();
+   });
+
+   $(function() {
+       $("#allmap").swipe( {
+           swipeStatus:function(event, phase, direction, distance , duration , fingerCount)
+           {
+               swipeMoveMap(event, phase, direction, distance , duration , fingerCount);
+           },
+
+           pinchStatus:function(event, phase, direction, distance , duration , fingerCount, pinchZoom)
+           {
+               swipeZoomMap(event, phase, direction, distance , duration , fingerCount, pinchZoom);
+           },
+//
+//           swipe:function(event, direction, distance, duration, fingerCount) {
+//               alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " );
+//           },
+
+//           pinchIn:function(event, direction, distance, duration, fingerCount, pinchZoom) {
+//               alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 ");
+//           },
+//
+//           pinchOut:function(event, direction, distance, duration, fingerCount, pinchZoom) {
+//               alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 ");
+//           },
+
+           fingers:$("#allmap").swipe.fingers.ALL
+       });
+   });
+
+   function Position2D(xPos,yPos)
+   {
+       this.x = xPos;
+       this.y = yPos;
+
+   }
+   function Init()
+   {
+        map =document.getElementById("allmap");
+        var c=document.getElementById("myCanvas");
+        cxt=c.getContext("2d");
+       c.width  = 1024;
+       c.height = 1024;
+      // alert("screenWidth = " + screenWidth + "\n" +"screenHeight = " +screenHeight );
+       plantBtnImg = new Image();
+       plantBtnImg.src = "images/button5.png";
+
+       c.addEventListener('click', function(e){
+           p = getEventPosition(e);
+           var resetBtnRect = {x:0,y:0,w:80,h:80};
+           if(isInRect(p,resetBtnRect)){
+               //点击了矩形
+              resetPos();
+           }
+       }, false);
+   }
+
+   //到初始位置//
+   function resetPos()
+   {
+       offsetPixPos =  {x:0,y:0};
+       DrawMap();
+   }
+   //得到点击的坐标
+   function getEventPosition(ev){
+       var x, y;
+       if (ev.layerX || ev.layerX == 0) {
+           x = ev.layerX;
+           y = ev.layerY;
+       }else if (ev.offsetX || ev.offsetX == 0) { // Opera
+           x = ev.offsetX;
+           y = ev.offsetY;
+       }
+       return {x: x, y: y};
+   }
+
+   function isInRect(point,rect)
+   {
+       if(point.x > rect.x && point.x < rect.x + rect.w)
+       {
+           if(point.y > rect.y && point.y < rect.y + rect.h)
+           {
+               return true;
+           }
+       }
+       return false;
+   }
+
+   function getLocation()
+   {
+       console.log("getLocation");
+       if (navigator.geolocation)
+       {
+//           navigator.geolocation.getCurrentPosition(lonlat2mercator);
+           var pos = {x:22.617193,y:114.023381};
+           lonlat2mercator(pos);
+           console.log("navigator.geolocation");
+       }
+       else
+       {
+           alert("Geolocation is not supported by this browser.");
+           console.log("Geolocation is not supported");
+       }
+
+//       var geolocation = new BMap.Geolocation();
+//       geolocation.getCurrentPosition(lonlat2mercator,{enableHighAccuracy: true})
+   }
+   //经纬度转墨卡托搜索
+   function lonlat2mercator(position){
+
+      //  var gpsPoint = new BMap.Point(position.coords.longitude,position.coords.latitude);
+       var gpsPoint = new BMap.Point(117.126575995835,36.6702207308909);
+       BMap.Convertor.translate(gpsPoint,0,function (point) {
+                   var x = point.lng * 20037508.34 / 180;
+                   var y = Math.log(Math.tan((90 + point.lat) * Math.PI / 360)) / (Math.PI / 180);
+                   y = y * 20037508.34 / 180;
+                   MTKPointCur.x = x;
+                   MTKPointCur.y = y;
+                  setCenterPos();
+                   DrawMap();
+               }
+           );
+
+
+//       var x = position.coords.longitude * 20037508.34 / 180;
+//       var y = Math.log(Math.tan((90 + position.coords.latitude) * Math.PI / 360)) / (Math.PI / 180);
+//       y = y * 20037508.34 / 180;
+//       MTKPointCur.x = x;
+//       MTKPointCur.y = y;
+//
+//       CreateImage();
+
+   }
+
+//
+//   //墨卡托转经纬度
+//   function mercator2lonlat(mercator){
+//       var lonlat={x:0,y:0};
+//       var x = mercator.x/20037508.34*180;
+//       var y = mercator.y/20037508.34*180;
+//       y= 180/Math.PI*(2*Math.atan(Math.exp(y*Math.PI/180))-Math.PI/2);
+//       lonlat.x = x;
+//       lonlat.y = y;
+//       return lonlat;
+//   }
+
+   //得到像素比例，1像素代表多少米
+    function GetPixelSizeByLevel(level)
+    {
+        //比例尺从3到18，3最大，18最小
+        return Math.pow(2,18 - level);
+    }
+
+    //得到屏幕坐标
+    function GetPixelPoint(point)
+    {
+        var pixelPoint =  {x:0,y:0};
+        pixelPoint.x = point.x / GetPixelSizeByLevel(curLevel);
+        pixelPoint.y = point.y/GetPixelSizeByLevel(curLevel);
+       //alert("x =" + pixelPoint.x + "\n" + "y=" + pixelPoint.y);
+        return pixelPoint;
+    }
+
+    //根据屏幕坐标得到图片坐标
+    function GetImagePoint(point)
+    {
+        var ImagePoint = {x:0,y:0};
+        ImagePoint.x =point.x /256;
+        //修正一下，减掉两个
+        ImagePoint.y = point.y/256 -2;
+       // alert("x =" + ImagePoint.x + "\n" + "y=" + ImagePoint.y);
+        return ImagePoint;
+    }
+
+
+   function setCenterPos()
+   {
+       centerPos = GetImagePoint(GetPixelPoint(MTKPointCur));
+   }
+    function DrawMap()
+    {
+
+        var xNum = 2 * Math.ceil((screenWidth / 2 -128) / 256) +1;
+        var yNum = 2 * Math.ceil((screenHeight / 2 -128) / 256) +1;
+        console.log("xNum = " + xNum + " yNum = " + yNum);
+        console.log("screenWidth = " + screenWidth + " screenHeight = " + screenHeight);
+        //加载图片
+        var newCenterPos  = {x:0,y:0};
+        newCenterPos.x = centerPos.x  - Math.round(offsetPixPos.x/256);
+        newCenterPos.y = centerPos.y + Math.round(offsetPixPos.y/256);
+        for (var i= 0;i<xNum;i++)
+        {
+            for (var j=0;j<yNum;j++)
+            {
+                var xPos = Math.round(newCenterPos.x + (1 - (xNum+1)/2) + i);
+                var yPos = Math.round(newCenterPos.y + ((yNum+1)/2 -1) - j);
+                //var urlNew = "http://api.map.baidu.com/customimage/tile?&x=" +xPos + "&y=" + yPos + "&z=" + curLevel + "&udt=20150116&customid=dark";
+                preImage(xPos,yPos,DrawImagePos);
+            }
+        }
+
+
+//        preImage(centerPos.x,centerPos.y,function(){
+//            cxt.drawImage(this,0,0);
+//        });
+
+//        var c=document.getElementById("myCanvas");
+//        cxt=c.getContext("2d");
+//        map.appendChild(c);
+    }
+
+   function DrawUI()
+   {
+
+       cxt.drawImage(plantBtnImg,0 ,0);
+       cxt.font="15px Georgia";
+       cxt.fillStyle="#fff";
+       cxt.fillText("复位",15,80);
+
+   }
+    function DrawImagePos(img,xIndex,yIndex)
+    {
+        var xPos = 256*xIndex + screenWidth /2 - 128 + offsetPixPos.x;
+        var yPos = screenHeight/2 - 256*yIndex -128 +offsetPixPos.y
+        console.log("DrawImagePos xPos = " + xPos + " yPos = " + yPos);
+        console.log("DrawImagePos xIndex = " + xIndex + " yIndex = " + yIndex);
+
+        cxt.drawImage(img,xPos ,yPos);
+
+        //画UI//
+        DrawUI();
+        //cxt.drawImage(img,0,0);
+    }
+
+    function preImage(xPos,yPos,callback)
+    {
+        console.log("preImage xPos = " + xPos + " yPos = " + yPos);
+        var urlNew = "http://api.map.baidu.com/customimage/tile?&x=" +xPos + "&y=" + yPos + "&z=" + curLevel + "&udt=20150116&customid=dark";
+        var img = new Image(); //创建一个Image对象，实现图片的预下载
+        img.src = urlNew;
+
+        if (img.complete) { // 如果图片已经存在于浏览器缓存，直接调用回调函数
+            callback(img,xPos - centerPos.x,yPos - centerPos.y );
+          // saveImage(xPos,yPos,img);
+            return; // 直接返回，不用再处理onload事件
+        }
+
+        img.onload = function () { //图片下载完毕时异步调用callback函数。
+            callback(img,xPos - centerPos.x,yPos - centerPos.y );//将回调函数的this替换为Image对象
+        };
+    }
+   function  swipeMoveMap(event, phase, direction, distance , duration , fingerCount)
+   {
+       // alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " +"你在"+phase+"中");
+//       if (phase === $("#allmap").swipe.phases.PHASE_END
+//               || phase === $("#allmap").swipe.phases.PHASE_CANCEL)
+//       {
+      // alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " +"你在"+phase+"中");
+//       if (phase === $("#allmap").swipe.phases.PHASE_END)
+//       {
+//           alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " +"你在"+phase+"中");
+//       }
+
+//           if(fingerCount == $("#allmap").swipe.fingers.ONE  && duration > 0.1 )
+//           {
+//               alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " +"你在"+phase+"中");
+
+               if(direction == $("#allmap").swipe.directions.UP)
+               {
+                   //console.log("enter 你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " +"你在"+phase+"中");
+                   offsetPixPos.y  -=  distance;
+               }
+               else if(direction ==$("#allmap").swipe.directions.DOWN)
+               {
+                   offsetPixPos.y  += distance ;
+               }
+               else if(direction == $("#allmap").swipe.directions.LEFT)
+               {
+                   offsetPixPos.x  -= distance;
+               }
+               else if(direction == $("#allmap").swipe.directions.RIGHT)
+               {
+                   offsetPixPos.x  += distance ;
+               }
+             //  console.log("finalOffsetPixPos x = " + finalOffsetPixPos.x + " curPixPos y = " + finalOffsetPixPos.y);
+               // curCenterPos = GetImagePoint(curPixPos);
+
+//           centerPos.x += Math.round(offsetPixPos.x / 256);
+//           centerPos.y += Math.round(offsetPixPos.y / 256);
+               // DrawMap();
+             DrawMap();
+              // smoothMove(distance ,duration)
+    //     }
+
+ //      }
+
+   }
+
+
+   function smoothMove(distance, duration)
+   {
+//       var speed = distance /duration;
+//      var timeId =  setInterval(function() {
+//           if(offsetPixPos != finalOffsetPixPos)
+//           {
+//               offsetPixPos += (finalOffsetPixPos - offsetPixPos) /speed * 100;
+//               DrawMap();
+//           }
+//           else
+//           {
+//               clearInterval(timeId);
+//           }
+//
+//       }, 100);
+
+
+
+   }
+
+   function swipeZoomMap(event, phase, direction, distance , duration , fingerCount, pinchZoom)
+   {
+       if(phase === $("#allmap").swipe.phases.PHASE_END || phase ===$("#allmap").swipe.phases.PHASE_CANCEL) {
+          // alert("你用"+fingerCount+"个手指以"+duration+"秒的速度向" + direction + "滑动了" +distance+ "像素 " + "放大了"+ pinchZoom +"倍");
+       }
+
+       return;
+       //3级到18级 0.231 到 1.384 ，默认13级，13级是1
+//       if(fingerCount == $("#allmap").swipe.fingers.TWO  && duration > 0.1 )
+//       {
+//           var newLevel = curLevel;
+//           if(direction ==  $("#allmap").swipe.directions.IN)
+//           {
+//               newLevel = Math.round( 13  * pinchZoom /1.384);
+//               if(newLevel  > 18)
+//               {
+//                   newLevel = 18;
+//               }
+//           }
+//           else  if(direction ==  $("#allmap").swipe.directions.OUT)
+//           {
+//               newLevel = Math.round( 13  * pinchZoom /1.384);
+//               if(newLevel  < 3)
+//               {
+//                   newLevel = 3;
+//               }
+//           }
+//           curLevel = newLevel;
+//           setCenterPos();
+//           DrawMap();
+//       }
+   }
+
+//   function saveImage(x,y,img)
+//   {
+//       var oCanvas = document.getElementById("myCanvas");
+//
+//       img.src = oCanvas.toDataURL("image/png");
+//
+//
+//      // Canvas2Image.saveAsPNG(oCanvas);  // 这将会提示用户保存PNG图片
+//   }
+//    $("myCanvas").on("swipe",function(){
+//        alert("swipe");
+//    });
+
+</script>
+
+
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+    <!--<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />-->
+    <!--<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />-->
+    <!--<title>TestMap</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<p id="demo">点击这个按钮，获得您的坐标：</p>-->
+<!--<button onclick="getLocation()">试一下</button>-->
+
+<!--<canvas id="myCanvas" width="200" height="100" style="border:1px solid #c3c3c3;">-->
+    <!--Your browser does not support the canvas element.-->
+<!--</canvas>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!--<script>-->
+
+    <!--var c=document.getElementById("myCanvas");-->
+    <!--var cxt=c.getContext("2d");-->
+    <!--cxt.fillStyle="#FF0000";-->
+    <!--cxt.beginPath();-->
+    <!--cxt.arc(70,18,15,0,Math.PI*2,true);-->
+    <!--cxt.closePath();-->
+    <!--cxt.fill();-->
+
+
+    <!--var x=document.getElementById("demo");-->
+    <!--function getLocation()-->
+    <!--{-->
+        <!--if (navigator.geolocation)-->
+        <!--{-->
+            <!--navigator.geolocation.getCurrentPosition(showPosition);-->
+        <!--}-->
+        <!--else{x.innerHTML="Geolocation is not supported by this browser.";}-->
+    <!--}-->
+    <!--function showPosition(position)-->
+    <!--{-->
+        <!--x.innerHTML="Latitude: " + position.coords.latitude +-->
+                <!--"<br />Longitude: " + position.coords.longitude;-->
+    <!--}-->
+<!--</script>-->
+
+<!--<img style="margin:20px" width="280" height="140" src="http://api.map.baidu.com/staticimage?-->
+<!--width=280&height=140&zoom=11&scale=2" />-->
+
+
+<!--//判断网络状态//-->
+ <!--// if(navigator.onLine)-->
+
+<!--// Converts image to canvas; returns new canvas element-->
+<!--function convertImageToCanvas(image) {-->
+<!--var canvas = document.createElement("canvas");-->
+<!--canvas.width = image.width;-->
+<!--canvas.height = image.height;-->
+<!--canvas.getContext("2d").drawImage(image, 0, 0);</p> <p> return canvas;-->
+    <!--}-->
+
+<!--// Converts canvas to an image-->
+<!--function convertCanvasToImage(canvas) {-->
+<!--var image = new Image();-->
+<!--image.src = canvas.toDataURL("image/png");-->
+<!--return image;-->
+<!--}-->

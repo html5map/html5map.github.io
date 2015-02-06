@@ -1,0 +1,36 @@
+<html>
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+
+<title>无标题文档</title>
+
+<script type="text/javascript" src="http://www.163css.com/myweb/hihilinxuan/template/hihilinxuan/cssjs/2012/12/ifengtouch/js/jquery.min.js"></script>
+<script type="text/javascript" src="http://www.163css.com/myweb/hihilinxuan/template/hihilinxuan/cssjs/2012/12/ifengtouch/js/jquery.touchSwipe.min.js"></script>
+<script>
+$(function() {
+//swipe 的dome
+$("#test").swipe( {
+    pinchIn:function(event, direction, distance, duration, fingerCount,zoom) {
+    alert("pinchIn");
+}
+
+});
+
+//swipeStatus的dome
+$("#test2").swipe( {
+    pinchOut:function(event, direction, distance, duration, fingerCount,zoom) {
+        alert("pinchOut");
+}
+});
+});
+
+</script>
+</head>
+<body>
+<div id="test" style="height:200px; background:#C63;-webkit-user-select:none; text-align:center; line-height:200px; color:#fff">swipe 的dome</div>
+<div id="test2" style="height:200px; background:#C63; margin-top:20px;-webkit-user-select:none; text-align:center; line-height:200px; color:#fff">swipeStatus的dome</div>
+</body>
+
+</html>
